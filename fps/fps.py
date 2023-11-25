@@ -226,6 +226,7 @@ def atm_input():
         return error_message, 400
     return jsonify({"operation": "new_task", "status": True})
 
+
     except RequestException as e:
         logging.error(f'Request error: {e}')
         return "Request error", 500

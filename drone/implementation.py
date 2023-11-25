@@ -309,7 +309,7 @@ class Drone:
         except Exception as e:
             print(f'exception raised: {e}')
 
-    def emergency(self)
+    def emergency(self):
         def emergency(self):
             self.emergency_stop.set()
             self.motion_status = "Stopped"
