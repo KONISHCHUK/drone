@@ -4,17 +4,21 @@ import requests
 import json
 from random import randrange
 from flask import Flask, request, jsonify
+import logging
+from requests.exceptions import RequestException
 
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
 
 CONTENT_HEADER = {"Content-Type": "application/json"}
-#DRONE_ENDPOINT_URI = "http://drone:6066/set_command"
-ATM_ENDPOINT_URI = "http://atm:6064/new_task"
+ATM_ENDPOINT_URI = "https://atm:6064/new_task"
 
 drones = []
 
 host_name = "0.0.0.0"
-port = 6065
+port = 6059
 app = Flask(__name__)             # create an app instance
+
 
 class Drone:
 
@@ -25,10 +29,10 @@ class Drone:
         self.status = "Initiated"
         self.endpoint = "http://drone" + str(index) + ":" + str(port) + "/set_command"
 
+
 @app.route("/set_command", methods=['POST'])
 def set_command():
     content = request.json
-    # print(f'[FPS_DEBUG] received {content}')
     global drones
     try:
         if content['command'] == 'initiate':
@@ -38,14 +42,14 @@ def set_command():
                     print(i)
                     tmp = True
                     drones[i].status = "Working"
-                    drones[i].coordinate= content['coordinate']
+                    drones[i].coordinate = content['coordinate']
                     drones[i].psswd = content['psswd']
                     drones[i].name = content['name']
                     data = {
-                    "name": content['name'],
-                    "command": "initiate",
-                    "coordinate": content['coordinate'],
-                    "psswd": content['psswd']
+                        "name": content['name'],
+                        "command": "initiate",
+                        "coordinate": content['coordinate'],
+                        "psswd": content['psswd']
                     }
                     print(drones[i].endpoint)
                     requests.post(
@@ -70,12 +74,12 @@ def set_command():
             ###
             if content['command'] == 'start':
                 data = {
-                "name": content['name'],
-                "command": content['command'],
-                "psswd": content['psswd'],
-                "speed": content['speed']
+                    "name": content['name'],
+                    "command": content['command'],
+                    "psswd": content['psswd'],
+                    "speed": content['speed']
                 }
-                requests.post( 
+                requests.post(
                     drone.endpoint,
                     data=json.dumps(data),
                     headers=CONTENT_HEADER,
@@ -84,9 +88,9 @@ def set_command():
                 print(f'Requested start for {content["name"]} successfully')
             if content['command'] == 'stop':
                 data = {
-                "name": content['name'],
-                "command": content['command'],
-                "psswd": content['psswd']
+                    "name": content['name'],
+                    "command": content['command'],
+                    "psswd": content['psswd']
                 }
                 requests.post(
                     drone.endpoint,
@@ -97,11 +101,11 @@ def set_command():
                 print(f'Requested stop for {content["name"]} successfully')
             if content['command'] == 'sign_out':
                 drone.status = 'Initiated'
-                #drones.remove(drone)
+                # drones.remove(drone)
                 data = {
-                "name": content['name'],
-                "command": content['command'],
-                "psswd": content['psswd']
+                    "name": content['name'],
+                    "command": content['command'],
+                    "psswd": content['psswd']
                 }
                 requests.post(
                     drone.endpoint,
@@ -112,8 +116,8 @@ def set_command():
                 print(f'Requested sign_out for {content["name"]}')
             if content['command'] == 'new_task':
                 data = {
-                "name": content['name'],
-                "points": content['points']
+                    "name": content['name'],
+                    "points": content['points']
                 }
                 requests.post(
                     ATM_ENDPOINT_URI,
@@ -122,11 +126,11 @@ def set_command():
                 )
                 print(f'[FPS_NEW_TASK]')
                 print(f'Requested new task for {content["name"]}')
-            if content['command'] == 'register': 
+            if content['command'] == 'register':
                 data = {
-                "name": content['name'],
-                "command": "register",
-                "psswd": content['psswd']
+                    "name": content['name'],
+                    "command": "register",
+                    "psswd": content['psswd']
                 }
                 requests.post(
                     drone.endpoint,
@@ -135,11 +139,11 @@ def set_command():
                 )
                 print(f'[FPS_REGISTER]')
                 print(f'Successfully requested for {content["name"]}')
-            if content['command'] == 'clear_flag': 
+            if content['command'] == 'clear_flag':
                 data = {
-                "name": content['name'],
-                "command": "clear_flag",
-                "psswd": content['psswd']
+                    "name": content['name'],
+                    "command": "clear_flag",
+                    "psswd": content['psswd']
                 }
                 requests.post(
                     drone.endpoint,
@@ -149,13 +153,15 @@ def set_command():
                 print(f'[FPS_CLEAR_FLAG]')
                 print(f'Successfully requested for drone {content["name"]}')
         # else:
-        #     print(f'[ATM_NEW_TASK] something went wrong during creating new task for drone {content["name"]}') 
-
+        #     print(f'[ATM_NEW_TASK] something went wrong during creating new task for drone {content["name"]}')
+    except RequestException as e:
+        logging.error(f'Request error: {e}')
+        return "Request error", 500
     except Exception as e:
-        print(e)
-        error_message = f"malformed request {request.data}"
-        return error_message, 400
+        logging.error(f'Unexpected error: {e}')
+        return "Server error", 500
     return jsonify({"operation": "set_command", "status": True})
+
 
 @app.route("/data_in", methods=['POST'])
 def data_in():
@@ -171,7 +177,7 @@ def data_in():
 
         drone = drone[0]
         print(f'[FPS_DATA_IN]')
-        
+
         if content['operation'] == 'log':
             if content['msg'] == "Task finished":
                 drone.status = 'Initiated'
@@ -184,6 +190,7 @@ def data_in():
         error_message = f"malformed request {request.data}"
         return error_message, 400
     return jsonify({"operation": "new_task", "status": True})
+
 
 @app.route("/atm_input", methods=['POST'])
 def atm_input():
@@ -198,10 +205,10 @@ def atm_input():
 
         if content['task_status'] == 'Accepted':
             data = {
-               "name": content['name'],
-               "points": content['points'],
-               "command": 'set_task',
-               "psswd": drone[0].psswd
+                "name": content['name'],
+                "points": content['points'],
+                "command": 'set_task',
+                "psswd": drone[0].psswd
             }
             requests.post(
                 drone[0].endpoint,
@@ -211,23 +218,27 @@ def atm_input():
             print(f'[FPS_NEW_TASK]')
             print(f'Successfully accepted new task for {content["name"]}')
         else:
-            print(f'[FPS_NEW_TASK_ERROR]') 
-            print(f'Something went wrong during accepting new task for {content["name"]}') 
+            print(f'[FPS_NEW_TASK_ERROR]')
+            print(f'Something went wrong during accepting new task for {content["name"]}')
 
     except Exception as _:
         error_message = f"malformed request {request.data}"
         return error_message, 400
     return jsonify({"operation": "new_task", "status": True})
 
-
-if __name__ == "__main__":
+    except RequestException as e:
+        logging.error(f'Request error: {e}')
+        return "Request error", 500
+    except Exception as e:
+        logging.error(f'Unexpected error: {e}')
+        return "Server error", 500
+    return jsonify({"operation": "set_command", "status": True})
 
     ###
     for i in range(3):
-        tmp = Drone([0,0,0], "ITEM" + str(i+1), 12345, 6066 + i, i)
+        tmp = Drone([0, 0, 0], "ITEM" + str(i + 1), 12345, 6066 + i, i)
         drones.append(tmp)
         print("Added drone " + tmp.name + " port: " + tmp.endpoint)
     ###
-
-    app.run(port = port, host=host_name)
-    
+if __name__ == "__main__":
+    app.run(port=port, host=host_name)

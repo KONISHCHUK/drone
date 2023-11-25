@@ -1,106 +1,51 @@
-#!/usr/bin/env python
-
-import hashlib
 import os
-from random import randrange
+import logging
 from flask import Flask, request, jsonify
-import implementation
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+
+app = Flask(__name__)  # Создание экземпляра Flask
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your_jwt_secret_key')  # Секретный ключ
+jwt = JWTManager(app)
+
+logging.basicConfig(level=logging.INFO)
 
 CONTENT_HEADER = {"Content-Type": "application/json"}
-ATM_ENDPOINT_URI = "http://atm:6064/data_in"
-ATM_SIGN_UP_URI = "http://atm:6064/sign_up"
-ATM_SIGN_OUT_URI = "http://atm:6064/sign_out"
-FPS_ENDPOINT_URI = "http://fps:6065/data_in"
-DELIVERY_INTERVAL_SEC = 1
-drones = []
 
-host_name = "0.0.0.0"
-port = os.environ['DRONE_PORT'] #6066
-app = Flask(__name__)             # create an app instance
+# Захардкодированные учетные данные для примера
+USER_DATA = {
+    "username": "admin",
+    "password": "password123"
+}
 
 
+@app.route('/login', methods=['POST'])
+def login():
+    credentials = request.json
+    username = credentials.get('username')
+    password = credentials.get('password')
+
+    if username == USER_DATA['username'] and password == USER_DATA['password']:
+        access_token = create_access_token(identity={'name': username})
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({"msg": "Wrong username or password"}), 401
 
 
 @app.route("/set_command", methods=['POST'])
+@jwt_required()
 def set_command():
-    global drones
-    try:
-        content = request.json
-        # print(f'[DRONE_DEBUG] received {content}')
-        if content['command'] == 'initiate':
-            print(port)
-            tmp = implementation.Drone(content['coordinate'], content['name'], content['psswd'])
-            drones.append(tmp)
-            print (f"Added in point {tmp.coordinate}")
-        else:
-            
-            drone = list(filter(lambda i: content['name'] == i.name, drones))
-            
-            if len(drone) > 1:
-                print(f'[DRONE_SET_COMMAND_ERROR]')
-                print(f'Nonunique name: {content["name"]}')
-                return "BAD ITEM NAME", 400
-            
-            drone = drone[0] 
-            if content['command'] == 'set_token':
-                    drone.token = content['token']
-                    print(f'[DRONE_TOKEN_SET]')
-            elif content['command'] == 'task_status_change':
-                    if drone.token == content['token']:
-                        drone.task_status = content['task_status']
-                        drone.hash = content['hash']
-                        print(f'[DRONE_TASK_ACCEPTED]')
-            elif drone.psswd == content['psswd']:
-                if content['command'] == 'start':
-                    drone.start(content["speed"])
-                if content['command'] == 'stop':
-                    drone.stop()
-                if content['command'] == 'sign_out':
-                    drone.sign_out()
-                    drones.remove(drone)
-                if content['command'] == 'clear_flag':
-                    drone.clear_emergency_flag()
-                if content['command'] == 'set_task':
-                    if drone.hash == len(content["points"]):
-                        print(f'[DRONE_SET_TASK]')
-                        print(f'Point added!')
-                        drone.task_points = content["points"]
-                if content['command'] == 'register':
-                    drone.register()
-                
-    except Exception as e:
-        print(f'exception raised: {e}')
-        return "MALFORMED REQUEST", 400
+    content = request.json
+
+    # Базовая валидация входящих данных
+    if 'command' not in content or 'name' not in content:
+        return jsonify({"msg": "Missing command or name"}), 400
+
+    # Здесь должна быть логика обработки команд для дрона
+    # ...
+
     return jsonify({"status": True})
-
-@app.route("/emergency", methods=['POST'])
-def emergency():
-    global drones
-    try:
-        content = request.json
-        drone = list(filter(lambda i: content['name'] == i.name, drones))
-        if len(drone) > 1:
-            print(f'[DRONE_EMERGENCY_ERROR]')
-            print(f'Nonunique name: {content["name"]}')
-            return "BAD ITEM NAME", 400
-        else:
-            if content['token'] == drone[0].token:
-                drone[0].status = "Blocked"
-                drone[0].emergency() 
-                print(f"[ATTENTION]")
-                print(f"{content['name']} emergency stopped!")
-
-    except Exception as e:
-        print(f'exception raised: {e}')
-        return "MALFORMED REQUEST", 400
-    return jsonify({"status": True})
-
-
 
 
 if __name__ == "__main__":
-    # threading.Thread(
-    #             target=lambda: temperature_pushing()).start()
-    app.run(port = port, host=host_name)
-    
-   
+    app.run(port=os.environ.get('DRONE_PORT', 6066), host="0.0.0.0")
+
