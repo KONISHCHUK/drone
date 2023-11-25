@@ -120,4 +120,4 @@ def emergency():
     return jsonify({"status": True})
 
 if __name__ == "__main__":
-    app.run(port=port, host=host_name)
+    app.run(port=os.environ.get('DRONE_PORT', 6066), ssl_context='adhoc')  # Запуск с поддержкой HTTPS
