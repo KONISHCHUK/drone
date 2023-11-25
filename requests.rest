@@ -1,0 +1,103 @@
+### Добавить новый дрон в систему (доступно создание 3 дронов) управления полетами. Координата - стартовая позиция машины.
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "initiate",
+    "name" : "ITEM1",
+    "coordinate" : [2,2,2],
+    "psswd": 12345
+}
+
+### Зарегестрировать дрон в диспетчерской. Он получит сгенерированный пароль от нее.
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "register",
+    "name" : "ITEM1",
+    "psswd": 12345
+}
+
+### Установить зону полетов. При вылете за нее дрон будет принудительно остановлен из диспетческой. (х1,у1,х2,у2) - лево низ - право верх, прямоугольная форма. 
+POST http://0.0.0.0:6064/set_area HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "area" : [-1,-1,100,100]
+}
+
+### Установить полетное задание. Четвертый параметр - необходимость съемки на предыдущем этапе. 
+#  Т.е. 4-й параметр точки 2 описывает съемку на пути 1->2. 0 - нет, 1 - да.
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "new_task",
+    "name" : "ITEM1",
+    "points" : [[5,5,5,0],[8,8,8,1],[11,11,11,1],[16,16,11,0]],
+    "psswd": 12345
+}
+
+### Запустить выполнение полетного задания.
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "start",
+    "name" : "ITEM1",
+    "speed" : 1,
+    "psswd": 12345
+}
+
+### Остановить выполнение полета.
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "stop",
+    "name" : "ITEM1",
+    "psswd": 12345
+}
+
+### Удалить дрон из диспетчерской
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "sign_out",
+    "name" : "ITEM1",
+    "psswd": 12345
+}
+
+### Переместиться в точку (ручной режим)
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "move_to",
+    "name" : "ITEM1",
+    "coordinate" : [3,5,1],
+    "speed" : 1,
+    "psswd": 12345
+}
+
+### Вероятно не будет использоваться, возможно более не работает. Нужно, чтобы вручную скинуть блокировку после остановки, если это не произошло автоматически. 
+POST http://0.0.0.0:6065/set_command HTTP/1.1
+content-type: application/json
+auth: very-secure-token
+
+{
+    "command" : "clear_flag",
+    "name" : "ITEM1",
+    "psswd": 12345
+}
+

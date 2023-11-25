@@ -1,0 +1,65 @@
+version: '3.4'
+
+services:
+  atm:
+    image: atm
+    build:
+      context: .
+      dockerfile: ./Dockerfile.atm
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+    volumes:
+      - ./storage/:/storage
+    ports:
+      - "6064:6064"    
+
+  fps:
+    image: fps
+    build:
+      context: .
+      dockerfile: ./Dockerfile.fps
+    volumes:
+      - ./storage/:/storage
+    ports:
+      - "6065:6065"
+
+  drone0:
+    image: drone0
+    build:
+      context: .
+      dockerfile: ./Dockerfile.drone
+    environment:
+     - DRONE_NAME=Drone1
+     - DRONE_PORT=6066
+    volumes:
+      - ./storage/:/storage
+    ports:
+      - "6066:6066" 
+
+  drone1:
+    image: drone1
+    build:
+      context: .
+      dockerfile: ./Dockerfile.drone
+    volumes:
+      - ./storage/:/storage
+    environment:
+     - DRONE_NAME=Drone2
+     - DRONE_PORT=6067
+    ports:
+      - "6067:6067"  
+    
+  drone2:
+    image: drone2
+    build:
+      context: .
+      dockerfile: ./Dockerfile.drone
+    volumes:
+      - ./storage/:/storage
+    environment:
+     - DRONE_NAME=Drone3
+     - DRONE_PORT=6068
+    ports:
+      - "6068:6068"
+    
+  
