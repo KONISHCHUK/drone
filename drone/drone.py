@@ -15,12 +15,13 @@ jwt = JWTManager(app)
 logging.basicConfig(level=logging.INFO)
 
 CONTENT_HEADER = {"Content-Type": "application/json"}
-ATM_ENDPOINT_URI = "http://atm:6064/data_in"
-ATM_SIGN_UP_URI = "http://atm:6064/sign_up"
-ATM_SIGN_OUT_URI = "http://atm:6064/sign_out"
-FPS_ENDPOINT_URI = "http://fps:6065/data_in"
+ATM_ENDPOINT_URI = "https://atm:6064/data_in"
+ATM_SIGN_UP_URI = "https://atm:6064/sign_up"
+ATM_SIGN_OUT_URI = "https://atm:6064/sign_out"
+FPS_ENDPOINT_URI = "https://fps:6065/data_in"
 DELIVERY_INTERVAL_SEC = 1
 drones = {}
+
 
 host_name = "0.0.0.0"
 port = os.environ.get('DRONE_PORT', 6066)  # Значение по умолчанию 6066
@@ -120,4 +121,4 @@ def emergency():
     return jsonify({"status": True})
 
 if __name__ == "__main__":
-    app.run(port=os.environ.get('DRONE_PORT', 6066), ssl_context='adhoc')  # Запуск с поддержкой HTTPS
+    app.run(port=os.environ.get('DRONE_PORT', 6066), ssl_context=('storage/cert.pem', 'storage/key.pem'))  # Запуск с поддержкой HTTPS
